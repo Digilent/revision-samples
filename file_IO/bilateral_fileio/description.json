@@ -13,7 +13,7 @@
     "accelerators" : [
         {
             "name" : "bilateralFilter",
-            "location" : "<PLATFORM>/sw/linux/inc/include/imgproc/xf_bilateral_filter.hpp",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_bilateral_filter.hpp",
             "clkid" : "0"
         }
     ],

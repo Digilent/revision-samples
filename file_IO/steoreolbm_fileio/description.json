@@ -13,7 +13,7 @@
     "accelerators" : [
         {
             "name" : "StereoBM",
-            "location" : "<PLATFORM>/sw/linux/inc/include/imgproc/xf_stereoBM.hpp",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_stereoBM.hpp",
             "clkid" : "0"
         }
     ],

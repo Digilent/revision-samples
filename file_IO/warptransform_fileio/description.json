@@ -13,7 +13,7 @@
     "accelerators" : [
         {
             "name" : "warpTransform",
-            "location" : "<PLATFORM>/sw/linux/inc/include/imgproc/xf_warp_transform.hpp",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_warp_transform.hpp",
             "clkid" : "0"
         }
     ],

@@ -13,7 +13,7 @@
     "accelerators" : [
         {
             "name" : "cornerHarris",
-            "location" : "<PLATFORM>/sw/linux/inc/include/features/xf_harris.hpp",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/features/xf_harris.hpp",
             "clkid" : "0"
         }
     ],
