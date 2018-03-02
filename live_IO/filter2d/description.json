@@ -1,0 +1,65 @@
+{
+    "example" : "Simple Filter2d Live I/O demo",
+    "overview" : "This demo runs a simple convolution filter that can be used as a starting point for other Live I/O programs. It requires a display be attached to the HDMI output port and an active video source be attached to the HDMI input. The incoming video's resolution must be 1080p or smaller (1080p may not work with some devices), and the display must be capable of displaying it. While running the demo, the onboard switches change the kernel being used. To customize the processing algorithm, modify the files found in the filter2d folder.",
+    "board" : [
+	"zybo_z7_20"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+	"dmclkid" : "3"
+    },
+    "accelerators" : [
+        {
+            "name" : "rgba2nv12",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_cvt_color.hpp",
+            "clkid" : "3"
+        },
+        {
+            "name" : "filter2D",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_custom_convolution.hpp",
+            "clkid" : "3"
+        },
+        {
+            "name" : "Duplicatemats",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_duplicateimage.hpp",
+            "clkid" : "3"
+        },
+        {
+            "name" : "merge",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_channel_combine.hpp",
+            "clkid" : "3"
+        }
+    ],
+    "compiler" : {
+        "symbols" : [
+            "HLS_NO_XIL_FPO_LIB",
+            "__ARM_PCS_VFP"
+        ],
+	"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/arm-xilinx-linux-gnueabi -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
+		},
+	"linker" : {
+			"libraries" : [
+				"glib-2.0",
+				"drm",
+				"v4l2subdev",
+				"mediactl",
+				"opencv_imgcodecs",
+				"opencv_core",
+				"lzma",
+				"tiff",
+				"png16",
+				"z",
+				"jpeg",
+				"opencv_imgproc",
+				"dl",
+				"rt",
+				"webp",
+				"opencv_features2d",
+				"ncurses",
+				"opencv_flann"
+			],
+			"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib"
+		}
+}
