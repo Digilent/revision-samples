@@ -9,8 +9,9 @@
 #define SRC_FILTER2D_FILTER2D_XF_H_
 
 #include "platform.h"
+#include "rgbpxl.h"
 #include "common/xf_common.h"
 
-void filter2d_xf( xf::Mat<XF_8UC4,  MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>  *src, xf::Mat<XF_8UC4,  MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> *dst, const short int coeff[KSIZE][KSIZE]);
+void filter2d_xf( rgbpxl_t *src, rgbpxl_t *dst, uint32_t height, uint32_t width, uint32_t stridePixels, const short int coeff[KSIZE][KSIZE]);
 
 #endif /* SRC_FILTER2D_FILTER2D_XF_H_ */

@@ -41,6 +41,8 @@
 
 #include "filter2d_xf.h"
 #include "platform.h"
+#include "hls_helper/hls_helper.h"
+#include <ncurses.h>
 
 #include"hls_stream.h"
 #include "ap_int.h"
@@ -53,7 +55,7 @@
 #include "imgproc/xf_channel_extract.hpp"
 #include "imgproc/xf_duplicateimage.hpp"
 
-void filter2d_xf( xf::Mat<XF_8UC4,  MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>  *src, xf::Mat<XF_8UC4,  MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> *dst, const short int coeff[KSIZE][KSIZE])
+void filter2d_xf( rgbpxl_t *src, rgbpxl_t *dst, uint32_t height, uint32_t width, uint32_t stridePixels, const short int coeff[KSIZE][KSIZE])
 {
 	short int filter_ptr[KSIZE*KSIZE];
 	for(int i = 0; i < KSIZE; i++)
@@ -64,90 +66,35 @@ void filter2d_xf( xf::Mat<XF_8UC4,  MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>  *src, xf::
 		}
 	}
 
-	/*
-	 * Extract the luminance from the rgb data to use as the grayscale date
-	 */
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_y(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yf(src->rows, src->cols);
-	xf::Mat<XF_8UC2, MAX_HEIGHT/2, MAX_WIDTH/2, XF_NPPC1> img_uv(src->rows/2, src->cols/2);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup11(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup12(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup21(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup22(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup23(src->rows, src->cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yfDup24(src->rows, src->cols);
+	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_y(height, width);
+	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yf(height, width);
 
-
-	xf::rgba2nv12<XF_8UC4, XF_8UC1, XF_8UC2, MAX_HEIGHT, MAX_WIDTH,XF_NPPC1 >(*src, img_y, img_uv);
+	read_input_gray(src, img_y, stridePixels);
 
 	/*
 	 * Perform the filter on the grayscale data
 	 */
 	xf::filter2D<XF_BORDER_CONSTANT,KSIZE,KSIZE,XF_8UC1,XF_8UC1,MAX_HEIGHT, MAX_WIDTH,XF_NPPC1>(img_y, img_yf, filter_ptr, SHIFT);
 
-	/*
-	 * Preserve SDSoC dataflow by explicitly duplicating filtered buffer. This prevents the data from being woven into and out of DDR and keeps
-	 * it in the fabric.
-	 */
-	xf::Duplicatemats<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_yf, img_yfDup11, img_yfDup12);
-	xf::Duplicatemats<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_yfDup11, img_yfDup21, img_yfDup22);
-	xf::Duplicatemats<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_yfDup12, img_yfDup23, img_yfDup24);
-
-	/*
-	 * Use the grayscale data for the R,G, and B channels of the output pipeline. It is also used for the 4th unused channel of the output pipeline
-	 * because something has to be used and it is less wasteful than creating and using a blank mat object.
-	 */
-	xf::merge<XF_8UC1, XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_yfDup21, img_yfDup22, img_yfDup23, img_yfDup24, *dst);
+	write_output_gray(dst, img_yf, stridePixels);
 
 /*
- * This is an alternate method that can be used to attempt to recombine in the original color.
- * It works fine for some filters, but colors "bleed" through low luminance areas, so the
- * filters that introduce a lot of black (such as "off" or edge detection) will be very off.
- * Don't forget to swap out the hardware accelerated functions if you use this.
- */
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_y(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_yf(src->rows, src->cols);
-//	xf::Mat<XF_8UC2, MAX_HEIGHT/2, MAX_WIDTH/2, XF_NPPC1> img_uv(src->rows/2, src->cols/2);
-//	xf::Mat<XF_8UC2, MAX_HEIGHT/2, MAX_WIDTH/2, XF_NPPC1> img_uvDelay(src->rows/2, src->cols/2);
-//	xf::rgba2nv12<XF_8UC4, XF_8UC1, XF_8UC2, MAX_HEIGHT, MAX_WIDTH,XF_NPPC1 >(*src, img_y, img_uv);
-//	xf::filter2D<XF_BORDER_CONSTANT,KSIZE,KSIZE,XF_8UC1,XF_8UC1,MAX_HEIGHT, MAX_WIDTH,XF_NPPC1>(img_y, img_yf, filter_ptr, SHIFT);
-//	xf::delayimages<XF_8UC2, MAX_HEIGHT/2, MAX_WIDTH/2, XF_NPPC1, MAX_WIDTH>(img_uv, img_uvDelay);
-//	xf::nv122rgba<XF_8UC1, XF_8UC2, XF_8UC4,MAX_HEIGHT,MAX_WIDTH,XF_NPPC1>(img_yf,img_uvDelay,*dst);
-
-/*
- * Another alternate method that runs a filter on each of the red, green, and blue channels.
+ * An alternate method that runs a filter on each of the red, green, and blue channels.
  * This uses a lot of resources but preserves color correctly.
  */
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup11(src->rows, src->cols);
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup12(src->rows, src->cols);
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup21(src->rows, src->cols);
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup22(src->rows, src->cols);
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup23(src->rows, src->cols);
-//	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_srcDup24(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_rIn(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_gIn(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_bIn(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_aIn(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_rOut(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_gOut(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_bOut(src->rows, src->cols);
-//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_aOut(src->rows, src->cols);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_rIn(height, width);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_gIn(height, width);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_bIn(height, width);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_rOut(height, width);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_gOut(height, width);
+//	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> img_bOut(height, width);
 //
-//	xf::Duplicatemats<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(*src, img_srcDup11, img_srcDup12);
-//	xf::Duplicatemats<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup11, img_srcDup21, img_srcDup22);
-//	xf::Duplicatemats<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup12, img_srcDup23, img_srcDup24);
-//
-//	xf::extractChannel<XF_8UC4, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup21,img_rIn,0);
-//	xf::extractChannel<XF_8UC4, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup22,img_gIn,1);
-//	xf::extractChannel<XF_8UC4, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup23,img_bIn,2);
-//	xf::extractChannel<XF_8UC4, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_srcDup24,img_aIn,3);
+//	read_input_rgb(src, img_rIn, img_gIn, img_bIn, stridePixels);
 //
 //	xf::filter2D<XF_BORDER_CONSTANT,KSIZE,KSIZE,XF_8UC1,XF_8UC1,MAX_HEIGHT, MAX_WIDTH,XF_NPPC1>(img_rIn, img_rOut, filter_ptr, SHIFT);
 //	xf::filter2D<XF_BORDER_CONSTANT,KSIZE,KSIZE,XF_8UC1,XF_8UC1,MAX_HEIGHT, MAX_WIDTH,XF_NPPC1>(img_gIn, img_gOut, filter_ptr, SHIFT);
 //	xf::filter2D<XF_BORDER_CONSTANT,KSIZE,KSIZE,XF_8UC1,XF_8UC1,MAX_HEIGHT, MAX_WIDTH,XF_NPPC1>(img_bIn, img_bOut, filter_ptr, SHIFT);
-//	xf::delayimages<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1,2*MAX_WIDTH>(img_aIn, img_aOut);
 //
-//	xf::merge<XF_8UC1, XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(img_bOut, img_gOut, img_rOut, img_aOut, *dst);
-
+//	write_output_rgb(dst, img_rOut, img_gOut, img_bOut, stridePixels);
 
 }

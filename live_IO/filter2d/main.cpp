@@ -21,13 +21,14 @@
 #include "common/xf_common.h"
 #include "sds_lib.h"
 #include "video_uio/video_uio.h"
+#include "rgbpxl.h"
 
 int main(int argc, char **argv)
 {
     uint32_t hActiveIn, vActiveIn;
     int sw_fd, tty_fd, mem_fd;;
     uint8_t *swMem;
-    XF_TNAME(XF_8UC4,XF_NPPC1) *fb_buf[NUM_INPUT_FB];
+    rgbpxl_t *fb_buf[NUM_INPUT_FB];
     uint32_t fb_addr[NUM_INPUT_FB] = {FB0_ADDR, FB1_ADDR, FB2_ADDR, FB3_ADDR};
     struct drm_cntrl drm = {0};
 
@@ -67,7 +68,7 @@ int main(int argc, char **argv)
     }
     for (int i = 0; i < NUM_INPUT_FB; i++)
     {
-    	fb_buf[i] = (XF_TNAME(XF_8UC4,XF_NPPC1) *) sds_mmap((void *) fb_addr[i], (drm.create_dumb[drm.current_fb].pitch*drm.create_dumb[drm.current_fb].height), NULL);
+    	fb_buf[i] = (rgbpxl_t *) sds_mmap((void *) fb_addr[i], (drm.create_dumb[drm.current_fb].pitch*drm.create_dumb[drm.current_fb].height), NULL);
     }
 
 	/*
@@ -75,11 +76,6 @@ int main(int argc, char **argv)
      */
     video_uio_start(UIO_DMA_PATH,FB0_ADDR,hActiveIn,vActiveIn,DISPLAY_BPP,drm.create_dumb[drm.current_fb].pitch);
 
-	/*
-	 * Instantiate Mat objects that are linked to the input and output video buffers
-	 */
-	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> src(vActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, fb_buf[0]);
-	xf::Mat<XF_8UC4, MAX_HEIGHT, MAX_WIDTH, XF_NPPC1> dst(vActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, drm.fbMem[drm.current_fb]);
 
 	/*
 	 * Set Switches and buttons as input
@@ -159,46 +155,45 @@ int main(int argc, char **argv)
 			switch (sw)
 			{
 			case 0 :
-				filter2d_xf(&src, &dst, coeff_off);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_off);
 				break;
 			case 2 :
-				filter2d_xf(&src, &dst, coeff_blur);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_blur);
 				break;
 			case 3 :
-				filter2d_xf(&src, &dst, coeff_edge);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_edge);
 				break;
 			case 4 :
-				filter2d_xf(&src, &dst, coeff_edge_h);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_edge_h);
 				break;
 			case 5 :
-				filter2d_xf(&src, &dst, coeff_edge_v);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_edge_v);
 				break;
 			case 6 :
-				filter2d_xf(&src, &dst, coeff_emboss);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_emboss);
 				break;
 			case 7 :
-				filter2d_xf(&src, &dst, coeff_gradient_h);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_gradient_h);
 				break;
 			case 8 :
-				filter2d_xf(&src, &dst, coeff_gradient_v);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_gradient_v);
 				break;
 			case 9 :
-				filter2d_xf(&src, &dst, coeff_sharpen);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_sharpen);
 				break;
 			case 10 :
-				filter2d_xf(&src, &dst, coeff_sobel_h);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_sobel_h);
 				break;
 			case 11 :
-				filter2d_xf(&src, &dst, coeff_sobel_v);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_sobel_v);
 				break;
 			default :
-				filter2d_xf(&src, &dst, coeff_identity);
+				filter2d_xf(fb_buf[0], (rgbpxl_t *)drm.fbMem[drm.current_fb], vActiveIn, hActiveIn, drm.create_dumb[drm.current_fb].pitch/DISPLAY_BPP, coeff_identity);
 			}
 		}
 		i++;
 		if (i == 30)
 		{
-			//break;
 			timeElapsed = (sds_clock_counter()- ticks);
 			frameRate = ((double) sds_clock_frequency())/((double) timeElapsed) * 30.0;
 			mvprintw(4,0,"Framerate = %3.3f     ", frameRate);

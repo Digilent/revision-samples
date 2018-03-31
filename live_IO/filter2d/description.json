@@ -12,8 +12,8 @@
     },
     "accelerators" : [
         {
-            "name" : "rgba2nv12",
-            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_cvt_color.hpp",
+            "name" : "read_input_gray",
+            "location" : "hls_helper/hls_helper.cpp",
             "clkid" : "3"
         },
         {
@@ -22,13 +22,8 @@
             "clkid" : "3"
         },
         {
-            "name" : "Duplicatemats",
-            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_duplicateimage.hpp",
-            "clkid" : "3"
-        },
-        {
-            "name" : "merge",
-            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_channel_combine.hpp",
+            "name" : "write_output_gray",
+            "location" : "hls_helper/hls_helper.cpp",
             "clkid" : "3"
         }
     ],
