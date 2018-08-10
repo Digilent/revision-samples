@@ -8,23 +8,23 @@
         "Linux"
     ],
     "system" : {
-	"dmclkid" : "3"
+	"dmclkid" : "0"
     },
     "accelerators" : [
         {
             "name" : "read_input_gray",
             "location" : "hls_helper/hls_helper.cpp",
-            "clkid" : "3"
+            "clkid" : "0"
         },
         {
             "name" : "filter2D",
             "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_custom_convolution.hpp",
-            "clkid" : "3"
+            "clkid" : "0"
         },
         {
             "name" : "write_output_gray",
             "location" : "hls_helper/hls_helper.cpp",
-            "clkid" : "3"
+            "clkid" : "0"
         }
     ],
     "compiler" : {
