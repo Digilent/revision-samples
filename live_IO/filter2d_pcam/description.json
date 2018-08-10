@@ -1,0 +1,55 @@
+{
+    "example" : "Simple Filter2d Live I/O demo (for Pcam 5C)",
+    "overview" : "This demo runs a simple convolution filter that can be used as a starting point for other Live I/O programs. It requires a display be attached to the HDMI output port and a Pcam 5C to be attached to the Pcam MIPI-CSI2 port. Prior to running this demo, the Pcam 5C must be properly configured using calls to media-ctl, v4l2-ctl and yavta. Scripts are included that accomplish this and will be found in the sd_card folder after build. Note the attached display must support the chosen resolution. While running the demo, the onboard switches change the kernel being used. To customize the processing algorithm, modify the files found in the filter2d folder.",
+    "board" : [
+	"zybo_z7_20"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+	"dmclkid" : "0"
+    },
+    "accelerators" : [
+        {
+            "name" : "filter2D",
+            "location" : "<PLATFORM>/sw/linux/linux/inc/include/imgproc/xf_custom_convolution.hpp",
+            "clkid" : "0"
+        },
+        {
+            "name" : "write_output_gray",
+            "location" : "hls_helper/hls_helper.cpp",
+            "clkid" : "0"
+        }
+    ],
+    "compiler" : {
+        "symbols" : [
+            "HLS_NO_XIL_FPO_LIB",
+            "__ARM_PCS_VFP"
+        ],
+	"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/arm-xilinx-linux-gnueabi -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
+		},
+	"linker" : {
+			"libraries" : [
+				"glib-2.0",
+				"drm",
+				"v4l2subdev",
+				"mediactl",
+				"opencv_imgcodecs",
+				"opencv_core",
+				"lzma",
+				"tiff",
+				"png16",
+				"z",
+				"jpeg",
+				"opencv_imgproc",
+				"dl",
+				"rt",
+				"webp",
+				"opencv_features2d",
+				"ncurses",
+				"opencv_flann"
+			],
+			"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../scripts"
+		}
+}
